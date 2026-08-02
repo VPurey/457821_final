@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Git-Chat AI</title>
+    <style>
+      /* Default: Dark Mode Palette */
+      :root {
+        --bg-color: #0f172a;
+        --card-bg: #1e293b;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --border-color: #334155;
+        --accent-color: #38bdf8;
+        --accent-hover: #0284c7;
+        --accent-text: #0f172a;
+        --user-msg-bg: #3b82f6;
+        --ai-msg-bg: #334155;
+        --input-bg: #0f172a;
+        --chat-window-bg: #0f172a;
+        --code-bg: #0f172a;
+      }
+
+      /* Light Mode Palette */
+      body.light-mode {
+        --bg-color: #f1f5f9;
+        --card-bg: #ffffff;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --border-color: #cbd5e1;
+        --accent-color: #0284c7;
+        --accent-hover: #0369a1;
+        --accent-text: #ffffff;
+        --user-msg-bg: #0284c7;
+        --ai-msg-bg: #e2e8f0;
+        --input-bg: #ffffff;
+        --chat-window-bg: #f8fafc;
+        --code-bg: #f1f5f9;
+      }
+
+      body {
+        font-family:
+          "Segoe UI",
+          -apple-system,
+          BlinkMacSystemFont,
+          Roboto,
+          sans-serif;
+        background: var(--bg-color);
+        color: var(--text-primary);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        box-sizing: border-box;
+        transition:
+          background 0.3s ease,
+          color 0.3s ease;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 850px;
+        background: var(--card-bg);
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow:
+          0 10px 25px -5px rgba(0, 0, 0, 0.1),
+          0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border-color);
+        transition:
+          background 0.3s ease,
+          border-color 0.3s ease;
+        /* This makes the container the anchor for relative positioning */
+        position: relative;
+      }
+
+      /* Container Header with Floating Circle Toggle Alignment */
+      .theme-toggle-container {
+        display: flex;
+        justify-content: flex-end; /* Keeps standard flow elements right-aligned */
+        margin-bottom: 20px;
+      }
+
+      /* The Circular Theme Toggle Button - Floating Position */
+      #theme-toggle.floating-toggle {
+        /* FLOATING POSITIONING ADDED: */
+        position: absolute;
+        top: 25px; /* Adjust top padding within container */
+        right: 25px; /* Adjust right padding within container */
+
+        /* Standard Styles (Keeping these) */
+        background: var(--border-color);
+        border: 1px solid transparent;
+        border-radius: 50%;
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        padding: 0;
+        z-index: 10; /* Ensures it stays above all chat content */
+      }
+
+      #theme-toggle:hover {
+        transform: scale(1.08);
+        background: var(--text-secondary);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+      }
+
+      #theme-toggle:active {
+        transform: scale(0.95);
+      }
+
+      /* Mode Icons Transition Behavior */
+      .mode-icon {
+        font-size: 18px;
+        transition:
+          transform 0.3s ease,
+          opacity 0.3s ease;
+        position: absolute;
+      }
+
+      /* Dark Mode Default State settings */
+      .dark-icon {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      .light-icon {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Light Mode State adjustments */
+      body.light-mode .dark-icon {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      body.light-mode .light-icon {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      h1 {
+        margin-top: 0;
+        color: var(--text-primary);
+        font-size: 1.8rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 25px;
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 10px;
+      }
+
+      .section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.03);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+      }
+      body.light-mode .section {
+        background: rgba(0, 0, 0, 0.02);
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      input,
+      select,
+      textarea {
+        padding: 12px 14px;
+        background: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 14px;
+        color: var(--text-primary);
+        transition: all 0.2s ease;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+      }
+
+      /* Core Actions Submit Button */
+      button[type="submit"],
+      button:not(#theme-toggle) {
+        background: var(--accent-color);
+        color: var(--accent-text);
+        border: none;
+        padding: 12px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 700;
+        transition: all 0.2s ease;
+      }
+
+      button:not(#theme-toggle):hover {
+        background: var(--accent-hover);
+        color: white;
+      }
+
+      button:disabled {
+        background: #475569;
+        color: #94a3b8;
+        cursor: not-allowed;
+      }
+
+      #chat-window {
+        height: 350px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--chat-window-bg);
+        overflow-y: auto;
+        padding: 20px;
+        margin-bottom: 20px;
+        scroll-behavior: smooth;
+      }
+
+      .msg {
+        margin-bottom: 16px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        max-width: 85%;
+        line-height: 1.5;
+        font-size: 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+
+      .user-msg {
+        background: var(--user-msg-bg);
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 2px;
+      }
+
+      .ai-msg {
+        background: var(--ai-msg-bg);
+        color: var(--text-primary);
+        margin-right: auto;
+        border-bottom-left-radius: 2px;
+      }
+
+      /* Target Markdown elements inside the AI response window */
+      .ai-msg pre,
+      .ai-msg code {
+        background: var(--code-bg);
+        font-family: "Courier New", Courier, monospace;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 14px;
+      }
+
+      .ai-msg pre {
+        padding: 12px;
+        overflow-x: auto;
+        border: 1px solid var(--border-color);
+        margin: 10px 0;
+      }
+
+      .ai-msg pre code {
+        padding: 0;
+        background: transparent;
+      }
+
+      .ai-msg p {
+        margin: 0 0 10px 0;
+      }
+
+      .ai-msg p:last-child {
+        margin-bottom: 0;
+      }
+
+      .error {
+        color: #f87171;
+        font-weight: bold;
+        margin-top: 12px;
+        padding: 10px;
+        background: rgba(248, 113, 113, 0.1);
+        border-radius: 6px;
+        border: 1px solid rgba(248, 113, 113, 0.2);
+      }
+
+      #chat-window::-webkit-scrollbar {
+        width: 6px;
+      }
+      #chat-window::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      #chat-window::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="theme-toggle-container">
+      <!-- ADDED CLASS: floating-toggle -->
+      <button
+        id="theme-toggle"
+        class="floating-toggle"
+        type="button"
+        aria-label="Toggle Theme"
+      >
+        <span class="mode-icon dark-icon">🌙</span>
+        <span class="mode-icon light-icon">☀️</span>
+      </button>
+    </div>
+
+    <div class="container">
+      <h1>Git-Chat AI</h1>
+      <p style="color: #666; font-size: 14px">
+        Query your GitHub repositories securely using an LLM. Tokens are kept
+        strictly in-memory.
+      </p>
+
+      <!-- Credentials Section -->
+      <div class="section">
+        <div class="form-group">
+          <label for="github-token">GitHub Personal Access Token (PAT)</label>
+          <input type="password" id="github-token" placeholder="ghp_..." />
+        </div>
+        <div class="form-group">
+          <label for="openai-key">OpenAI API Key</label>
+          <input type="password" id="openai-key" placeholder="sk-..." />
+        </div>
+        <button id="btn-load-repos">Connect & Load Repositories</button>
+        <div id="auth-error" class="error"></div>
+      </div>
+
+      <!-- Repo Selector Section -->
+      <div class="section">
+        <div class="form-group">
+          <label for="repo-select">Select a Repository</label>
+          <select id="repo-select" disabled>
+            <option value="">-- Connect GitHub first --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Chat Section -->
+      <div class="section">
+        <div id="chat-window">
+          <div class="msg ai-msg">
+            Hello! Enter your tokens, select a repository, and ask me anything
+            about your code.
+          </div>
+        </div>
+        <div class="form-group">
+          <textarea
+            id="user-question"
+            rows="3"
+            placeholder="e.g., Explain the logic in main.py, or find security vulnerabilities..."
+            disabled
+          ></textarea>
+        </div>
+        <button id="btn-send" disabled>Ask AI</button>
+        <div id="chat-error" class="error"></div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
